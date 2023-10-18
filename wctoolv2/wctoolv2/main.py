@@ -4,6 +4,8 @@ from typing import Optional
 import typer
 from typing_extensions import Annotated
 
+app = typer.Typer()
+
 
 def bytes_in_file(content):
     # convert string to bytes and count the number of bytes in the file
@@ -21,8 +23,9 @@ def words_in_file(content):
 def chars_in_file(content):
     return len(content)
 
+@app.command()
 def main(
-    filename: Annotated[Optional[str], typer.Argument(show_default=False)] = None,
+    filename: Annotated[Optional[str], typer.Argument(help="file path to text file", show_default=False)] = None,
     c: Annotated[bool, typer.Option("-c", help="count text file bytes", show_default=False)] = False,
     l: Annotated[bool, typer.Option("-l",help="count text file lines", show_default=False)] = False,
     w: Annotated[bool, typer.Option("-w",help="count text file words", show_default=False)] = False,
