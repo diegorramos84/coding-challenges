@@ -2,7 +2,7 @@
 
 My dev notes:
 
-This is the same application as 01.wc-tool but using poetry and typer
+**None: This is the same application as 01.wc-tool but using poetry and typer**
 
 Install poetry
 https://python-poetry.org/docs/
