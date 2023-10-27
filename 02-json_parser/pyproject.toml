@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "02-json-parser"
+version = "0.1.0"
+description = "a json parser CLI"
+authors = ["Diego Ramos <diegorramos84@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pytest = "^7.4.3"
+typer = {extras = ["all"], version = "^0.9.0"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
