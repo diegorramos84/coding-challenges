@@ -24,7 +24,6 @@ def test_empty_object_returns_dict():
 
     data = json.load(f)
 
-    print(result)
     assert result == data
 
 
@@ -35,31 +34,28 @@ def test_non_empty_object_returns_dict():
 
     data = json.load(f)
 
-    print(result)
     assert result == data
 
 
 # comma inside list
-def test_non_empty_object_returns_dict():
+def test_non_empty_object_returns_list_nested():
     result = parser(valid3_json_path)
 
     f = open(valid3_json_path)
 
     data = json.load(f)
 
-    print(result)
     assert result == data
 
 
 # comma inside dict
-def test_non_empty_object_returns_dict():
-    result = parser(valid3_json_path)
+def test_non_empty_object_returns_dict_nested():
+    result = parser(valid4_json_path)
 
     f = open(valid4_json_path)
 
     data = json.load(f)
 
-    print(result)
     assert result == data
 
 
