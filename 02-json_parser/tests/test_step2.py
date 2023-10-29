@@ -1,8 +1,9 @@
+import json
 import os
 
 import pytest
 
-from json_parser.main import parser
+from json_parser.main import main
 
 # get the current path were the test is being called from
 current_dir = os.path.dirname(__file__)
@@ -15,17 +16,20 @@ invalid2_json_path = os.path.join(current_dir, "step2", "invalid2.json")
 
 
 def test_one_object_returns_dict():
-    result = parser(valid_json_path)
-    assert result["key"] == "value"
+    result = main(valid_json_path)
+    f = open(valid_json_path)
+
+    data = json.load(f)
+    assert result == data
 
 
 def test_more_object_returns_dict():
-    result = parser(valid2_json_path)
+    result = main(valid2_json_path)
     assert result["key"] == "value"
 
 
 def test_reject_files_trailing_comma():
     with pytest.raises(SystemExit) as result:
-        parser(invalid_json_path)
+        main(invalid_json_path)
     assert result.type == SystemExit
     assert result.value.code == 1

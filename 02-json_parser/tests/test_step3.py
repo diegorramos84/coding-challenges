@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from json_parser.main import parser
+from json_parser.main import main
 
 # get the current path were the test is being called from
 current_dir = os.path.dirname(__file__)
@@ -15,7 +15,7 @@ invalid_json_path = os.path.join(current_dir, "step3", "invalid.json")
 
 
 def test_object_returns_dict():
-    result = parser(valid_json_path)
+    result = main(valid_json_path)
 
     f = open(valid_json_path)
 
@@ -27,6 +27,6 @@ def test_object_returns_dict():
 
 def test_reject_files_not_correct_format():
     with pytest.raises(SystemExit) as result:
-        parser(invalid_json_path)
+        main(invalid_json_path)
     assert result.type == SystemExit
     assert result.value.code == 1

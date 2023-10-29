@@ -8,21 +8,68 @@ from typing_extensions import Annotated
 app = typer.Typer()
 
 
-def check_valid_json(file):
-    with open(file, "r") as myFile:
-        content = myFile.read()
-        # check if the content starts and ends with curly brackets
-        if (
-            len(content) > 0
-            and content[0] == "{"
-            or content[0] == "["
-            and content[-1] == "}"
-            or content[-1] == "]"
-        ):
-            return True
+# def is_valid_json(content):
+#     if not content or content.isspace():
+#         return False
 
+#     stack = []
+
+#     for char in content:
+#         if char in "{[":
+#             stack.append(char)
+#         elif char in "]}":
+#             if not stack:
+#                 return False
+#             if char == "}" and stack[-1] != "{":
+#                 return False
+#             if char == "]" and stack[-1] != "[":
+#                 return False
+#             stack.pop()
+#     return not stack
+
+
+def is_valid_json(content):
+    if not content or content.isspace():
+        return False
+
+    stack = []  # Stack to keep track of opening and closing brackets
+    in_string = False  # Flag to indicate if we are inside a string
+    escape = False  # Flag to indicate if the current character is escaped
+
+    for char in content:
+        if in_string:
+            if char == "\\" and not escape:
+                escape = True
+            elif char == "'" and not escape:
+                return False  # Return False if single quotes are used around strings
+            elif char == '"' and not escape:
+                in_string = False
+            else:
+                escape = False
         else:
-            return False
+            if char in ('"'):
+                in_string = True
+            elif char in ("{", "[", "("):
+                stack.append(char)
+            elif char in ("}", "]", ")"):
+                if not stack:
+                    return False
+                opening_bracket = stack.pop()
+                if (
+                    (char == "}" and opening_bracket != "{")
+                    or (char == "]" and opening_bracket != "[")
+                    or (char == ")" and opening_bracket != "(")
+                ):
+                    return False
+
+    return not stack and not in_string
+
+
+def check_valid_json(file):
+    with open(file, "r") as file:
+        content = file.read()
+
+    return is_valid_json(content)
 
 
 def find_unquoted_keys(file):
@@ -66,19 +113,27 @@ def check_for_trailing_commas(file):
             return True
 
 
-def contains_illegal_expression(file):
-    with open(file, "r") as myFile:
-        content = myFile.read()
-        try:
-            parsed = ast.literal_eval(content)
+# def contains_no_illegal_expression(file):
+#     with open(file, "r") as myFile:
+#         content = myFile.read()
+#         try:
+#             parsed = ast.literal_eval(content)
+#             if parsed:
+#                 return True
+#         except Exception as e:
+#             print(f"Illegal expression found: {e}")
+#             return False
 
-            if isinstance(parsed, dict):
-                return True
-            else:
-                return False
-        except Exception as e:
-            print("Illegal expression found")
+
+def check_for_illegal_chars(filename):
+    with open(filename, "r") as file:
+        content = file.read()
+        single_quote_count = content.count("'")
+        escaped_single_quote_count = content.count("\\'")
+        # Check for single quotes surrounding values, considering escaped single quotes
+        if single_quote_count > escaped_single_quote_count:
             return False
+        return True
 
 
 def contains_hexadecimal(file):
@@ -91,11 +146,11 @@ def contains_hexadecimal(file):
             if isinstance(parsed, dict):
                 for value in parsed.values():
                     if isinstance(value, int) and hex(value) != hex(value).lower():
-                        return True
+                        print("file contains hexadecimal")
+                        return False  # file contains a hexadecimal
         except Exception as e:
             pass
-    print("Hexadecimal number(s) found")
-    return False
+    return True
 
 
 def parse_value(value, my_dict, key):
@@ -138,7 +193,6 @@ def split_json_string(json_str):
             current_token = ""
 
     result.append(current_token.strip())
-    print(result)
     return result
 
 
@@ -162,32 +216,34 @@ def parser(file):
         return my_dict
 
 
+def validate_json(filename):
+    is_valid = check_valid_json(filename)
+    has_no_apostrophes = check_for_apostrophe(filename)
+    has_no_unquoted_keys = find_unquoted_keys(filename)
+    has_no_trailing_commas = check_for_trailing_commas(filename)
+    has_no_illegal_chars = check_for_illegal_chars(filename)
+    has_no_hexadecimal = contains_hexadecimal(filename)
+    print(is_valid, "TEST")
+
+    return (
+        is_valid
+        and has_no_apostrophes
+        and has_no_unquoted_keys
+        and has_no_trailing_commas
+        and has_no_illegal_chars
+        and has_no_hexadecimal
+    )
+
+
 @app.command()
 def main(filename: Annotated[str, typer.Argument()]):
-    if filename:
-        is_valid = check_valid_json(filename)
-        # has_no_apostrophes = check_for_apostrophe(filename)
-        # has_no_unquoted_keys = find_unquoted_keys(filename)
-        # has_no_trailing_commas = check_for_trailing_commas(filename)
-        # has_no_illegal_expression = contains_illegal_expression(filename)
-        # has_no_hexadecimal = contains_hexadecimal(filename)
-        # print(has_no_hexadecimal)
+    if filename and validate_json(filename):
+        print("Valid JSON")
+        return parser(filename)
 
-        if (
-            is_valid
-            # and has_no_apostrophes
-            # and has_no_unquoted_keys
-            # and has_no_trailing_commas
-            # and has_no_illegal_expression
-            # and has_no_hexadecimal
-        ):
-            print("Valid JSON")
-            parser(filename)
-            sys.exit(0)
-
-        else:
-            print("Invalid JSON")
-            sys.exit(1)
+    else:
+        print("Invalid JSON")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

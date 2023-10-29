@@ -19,4 +19,5 @@ def test_is_valid():
 
 def test_is_not_valid():
     result = check_valid_json(invalid_json_path)
+    print(result, "RESULT")
     assert result is False

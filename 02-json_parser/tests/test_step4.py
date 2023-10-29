@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from json_parser.main import parser
+from json_parser.main import main
 
 # get the current path were the test is being called from
 current_dir = os.path.dirname(__file__)
@@ -18,7 +18,7 @@ invalid_json_path = os.path.join(current_dir, "step4", "invalid.json")
 
 
 def test_empty_object_returns_dict():
-    result = parser(valid_json_path)
+    result = main(valid_json_path)
 
     f = open(valid_json_path)
 
@@ -28,7 +28,7 @@ def test_empty_object_returns_dict():
 
 
 def test_non_empty_object_returns_dict():
-    result = parser(valid2_json_path)
+    result = main(valid2_json_path)
 
     f = open(valid2_json_path)
 
@@ -39,7 +39,7 @@ def test_non_empty_object_returns_dict():
 
 # comma inside list
 def test_non_empty_object_returns_list_nested():
-    result = parser(valid3_json_path)
+    result = main(valid3_json_path)
 
     f = open(valid3_json_path)
 
@@ -50,7 +50,7 @@ def test_non_empty_object_returns_list_nested():
 
 # comma inside dict
 def test_non_empty_object_returns_dict_nested():
-    result = parser(valid4_json_path)
+    result = main(valid4_json_path)
 
     f = open(valid4_json_path)
 
@@ -61,6 +61,6 @@ def test_non_empty_object_returns_dict_nested():
 
 def test_non_empty_object_returns_dict_wrong_format():
     with pytest.raises(SystemExit) as result:
-        parser(invalid_json_path)
+        main(invalid_json_path)
     assert result.type == SystemExit
     assert result.value.code == 1
