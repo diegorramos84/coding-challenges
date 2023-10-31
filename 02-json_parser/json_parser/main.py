@@ -27,14 +27,14 @@ def is_valid_json(content):
         if in_string:
             if char == "\\" and not escape:
                 escape = True
-            elif char == "'" and not escape:
-                return False  # Return False if single quotes are used around strings
             elif char == '"' and not escape:
                 in_string = False
             else:
                 escape = False
         else:
-            if char in ('"'):
+            if char == "'" and not escape:
+                return False  # Return False if single quotes are used around strings
+            elif char in ('"'):
                 in_string = True
             elif char in ("{", "[", "("):
                 stack.append(char)
@@ -121,15 +121,34 @@ def check_for_trailing_commas(file):
             return True
 
 
+# def check_for_illegal_chars(filename):
+#     with open(filename, "r") as file:
+#         content = file.read()
+#         single_quote_count = content.count("'")
+#         escaped_single_quote_count = content.count("\\'")
+#         # Check for single quotes surrounding values, considering escaped single quotes
+#         if single_quote_count > escaped_single_quote_count:
+#             return False
+#         return True
+
+
 def check_for_illegal_chars(filename):
     with open(filename, "r") as file:
         content = file.read()
-        single_quote_count = content.count("'")
-        escaped_single_quote_count = content.count("\\'")
-        # Check for single quotes surrounding values, considering escaped single quotes
-        if single_quote_count > escaped_single_quote_count:
-            return False
-        return True
+        in_string = False
+        escaped = False
+
+        for char in content:
+            if char == "\\" and not escaped:
+                escaped = True
+            elif char == '"' and not escaped:
+                in_string = not in_string
+            elif char == "'" and not in_string:
+                return False
+            else:
+                escaped = False
+
+    return True
 
 
 def contains_hexadecimal(file):
@@ -194,6 +213,7 @@ def check_incomplete_number_format(value):
 
 
 def parse_value(value, my_dict, key):
+    print(value, "VALUE")
     check_incomplete_number_format(value)
     # nested lists
     if isinstance(value, list):
@@ -258,6 +278,8 @@ def split_json_string(json_str):
     nesting_level = 0
     current_token = ""
 
+    # json_str = json_str[1:-1]
+
     for char in json_str:
         if char == "{" or char == "[":
             nesting_level += 1
@@ -272,6 +294,31 @@ def split_json_string(json_str):
 
     result.append(current_token.strip())
     return result
+
+
+# def split_json_string(json_str):
+#     result = []
+#     nesting_level = 0
+#     current_token = ""
+#     in_string = False
+
+#     for char in json_str:
+#         if char == "{" or char == "[":
+#             nesting_level += 1
+#         elif char == "}" or char == "]":
+#             nesting_level -= 1
+
+#         if char == "," and nesting_level > 1 and not in_string:
+#             result.append(current_token.strip())
+#             current_token = ""
+#         else:
+#             current_token += char
+
+#         if char == '"':
+#             in_string = not in_string
+
+#     result.append(current_token.strip())
+#     return result
 
 
 def check_for_linebreaks_in_string(file):
@@ -297,40 +344,35 @@ def check_for_linebreaks_in_string(file):
             sys.exit(1)
 
 
-def check_for_tabs_in_string(file):
-    with open(file, "r") as myFile:
-        content = myFile.read()
+def check_for_tabs_in_string(value):
+    inside_string = False
+    escape = False
 
-        inside_string = False
-        escape = False
-
-        for i, char in enumerate(content):
-            if char == '"':
-                inside_string = not inside_string
-            elif char == "\t" and inside_string:
-                print(
-                    f"Error mid parsing: Tab character found inside string at position {i}"
-                )
-                sys.exit(1)
-            elif char == "\\" and inside_string:
-                print(
-                    f"Error mid parsing: Escaped tab character found inside string at position {i}"
-                )
-                sys.exit(1)
-        if inside_string:
-            print("Error mid parsing: Unclosed string")
+    for i, char in enumerate(value):
+        if char == '"':
+            inside_string = not inside_string
+        elif char == "\t" and inside_string:
+            print(
+                f"Error mid parsing: Tab character found inside string at position {i}"
+            )
             sys.exit(1)
+        elif char == "\\" and inside_string:
+            print(
+                f"Error mid parsing: Escaped tab character found inside string at position {i}"
+            )
+            sys.exit(1)
+    if inside_string:
+        print("Error mid parsing: Unclosed string")
+        sys.exit(1)
 
 
 def parser(file):
     with open(file, "r") as myFile:
         content = myFile.read()
 
-        check_for_tabs_in_string(file)
         check_for_linebreaks_in_string(file)
 
         cleaned_content = re.sub(r"\n\s*", "", content)
-        print(cleaned_content, "CLEAN")
 
         pairs = split_json_string(cleaned_content)
 
@@ -341,7 +383,7 @@ def parser(file):
                 print(f"Error mid parsing: list contains colons instead of commas")
                 sys.exit(1)
 
-            if ":" not in pair and "," in pair:
+            if ":" not in pair and "," in pair and not pair[:-1] == ",":
                 print(
                     f"Invalid JSON: Found a comma instead of a colon in pair '{pair}'"
                 )
@@ -356,13 +398,16 @@ def parser(file):
                     print(f"Error mid parsing: double colon")
                     sys.exit(1)
                 check_for_wrong_boolean_format(file, value)
+                check_for_tabs_in_string(value)
 
                 parse_value(value, my_dict, key)
             elif ":" not in pair and pair[0] == "{" and pair[-1] == "}":
                 print(f"Error mid parsing: missing colon")
                 sys.exit(1)
             else:
+                check_for_tabs_in_string(pair)
                 parse_value(pair, my_dict, None)
+        print(my_dict)
         return my_dict
 
 
@@ -370,23 +415,20 @@ def validate_json(filename):
     try:
         is_valid = check_valid_json(filename)
         has_no_apostrophes = check_for_apostrophe(filename)
-        has_no_unquoted_keys = find_unquoted_keys(filename)
+        # has_no_unquoted_keys = find_unquoted_keys(filename)
         has_no_trailing_commas = check_for_trailing_commas(filename)
         has_no_illegal_chars = check_for_illegal_chars(filename)
         has_no_hexadecimal = contains_hexadecimal(filename)
         has_no_extra_content = check_content_outbounds(filename)
-        # has_no_tabs_strings = check_for_tabs(filename)
-        # print(has_no_tabs_strings, "TABS")
 
         return (
             is_valid
             and has_no_apostrophes
-            and has_no_unquoted_keys
+            # and has_no_unquoted_keys
             and has_no_trailing_commas
             and has_no_illegal_chars
             and has_no_hexadecimal
             and has_no_extra_content
-            # and has_no_tabs_strings
         )
     except Exception as e:
         print(f"Error during JSON validation: {e}")

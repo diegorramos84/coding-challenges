@@ -10,6 +10,8 @@ current_dir = os.path.dirname(__file__)
 # construct the path to the .json files
 folder_path = os.path.join(current_dir, "extra")
 
+pass1_path = os.path.join(current_dir, "extra", "pass1.json")
+
 
 def get_fail_json_files(dir):
     fail_json_files = []
@@ -25,3 +27,13 @@ def test_non_empty_object_returns_dict_wrong_format(invalid_json_path):
         main(invalid_json_path)
     assert result.type == SystemExit
     assert result.value.code == 1
+
+
+def test_empty_object_returns_dict():
+    result = main(pass1_path)
+
+    f = open(pass1_path)
+
+    data = json.load(f)
+
+    assert result == data
