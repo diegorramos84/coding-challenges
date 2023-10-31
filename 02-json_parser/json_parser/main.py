@@ -186,13 +186,15 @@ def contains_line_break_in_string(string):
     return False
 
 
+def check_incomplete_number_format(value):
+    value = value.strip("[").strip("]").strip("{").strip("}")
+    if re.match(r"^[{\[]?\d+(\.\d+)?[eE][-+]?[}\]]?$", value):
+        print(f"Error mid parsing: the value: {value} is an incomplete number format")
+        sys.exit(1)
+
+
 def parse_value(value, my_dict, key):
-    # if contains_tab_in_string(value):
-    #     print(f"Error mid parsing: the value '{value}' contains a tab character")
-    #     sys.exit(1)
-    # if contains_line_break_in_string(value):
-    #     print(f"Error mid parsing: the value '{value}' contains a line break character")
-    #     sys.exit(1)
+    check_incomplete_number_format(value)
     # nested lists
     if isinstance(value, list):
         value = [parse_value(elem, {}, None) for elem in value]
@@ -272,24 +274,60 @@ def split_json_string(json_str):
     return result
 
 
-# def clean_content(content):
-#     cleaned_lines = []
+def check_for_linebreaks_in_string(file):
+    with open(file, "r") as myFile:
+        content = myFile.read()
 
-#     in_string = False
+        inside_string = False
+        escape = False
 
-#     for line in content.split("\n"):
-#         if not in_string:
-#             line = line.strip()
-#             in_string = line.startswith('"') and not line.endswith('"')
-#         cleaned_lines.append(line)
+        for i, char in enumerate(content):
+            if char == '"':
+                inside_string = not inside_string
+            elif char == "\\" and inside_string:
+                escape = not escape
+            elif char == "\n" and inside_string and not escape:
+                print(
+                    f"Error mid parsing: Line break found inside string at position {i}"
+                )
+                sys.exit(1)
 
-#     cleaned_content = "\n".join(cleaned_lines)
-#     return cleaned_content
+        if inside_string:
+            print("Error mid parsing: Unclosed string")
+            sys.exit(1)
+
+
+def check_for_tabs_in_string(file):
+    with open(file, "r") as myFile:
+        content = myFile.read()
+
+        inside_string = False
+        escape = False
+
+        for i, char in enumerate(content):
+            if char == '"':
+                inside_string = not inside_string
+            elif char == "\t" and inside_string:
+                print(
+                    f"Error mid parsing: Tab character found inside string at position {i}"
+                )
+                sys.exit(1)
+            elif char == "\\" and inside_string:
+                print(
+                    f"Error mid parsing: Escaped tab character found inside string at position {i}"
+                )
+                sys.exit(1)
+        if inside_string:
+            print("Error mid parsing: Unclosed string")
+            sys.exit(1)
 
 
 def parser(file):
     with open(file, "r") as myFile:
         content = myFile.read()
+
+        check_for_tabs_in_string(file)
+        check_for_linebreaks_in_string(file)
 
         cleaned_content = re.sub(r"\n\s*", "", content)
         print(cleaned_content, "CLEAN")
@@ -317,7 +355,6 @@ def parser(file):
                 if ":" in key or ":" in value[0]:
                     print(f"Error mid parsing: double colon")
                     sys.exit(1)
-
                 check_for_wrong_boolean_format(file, value)
 
                 parse_value(value, my_dict, key)
@@ -338,6 +375,8 @@ def validate_json(filename):
         has_no_illegal_chars = check_for_illegal_chars(filename)
         has_no_hexadecimal = contains_hexadecimal(filename)
         has_no_extra_content = check_content_outbounds(filename)
+        # has_no_tabs_strings = check_for_tabs(filename)
+        # print(has_no_tabs_strings, "TABS")
 
         return (
             is_valid
@@ -347,6 +386,7 @@ def validate_json(filename):
             and has_no_illegal_chars
             and has_no_hexadecimal
             and has_no_extra_content
+            # and has_no_tabs_strings
         )
     except Exception as e:
         print(f"Error during JSON validation: {e}")
