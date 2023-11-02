@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from json_parser.main import main
+from parser_json.main import main
 
 # get the current path were the test is being called from
 current_dir = os.path.dirname(__file__)
@@ -25,8 +25,8 @@ def test_object_returns_dict():
     assert result == data
 
 
-def test_reject_files_not_correct_format():
-    with pytest.raises(SystemExit) as result:
+def test_reject_missing_quotes():
+    with pytest.raises(Exception) as result:
         main(invalid_json_path)
-    assert result.type == SystemExit
-    assert result.value.code == 1
+        print(result.value)
+    assert str(result.value) == "Unexpected char or missing quotes around string"
