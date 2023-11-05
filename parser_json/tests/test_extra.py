@@ -28,11 +28,11 @@ def test_non_empty_object_returns_dict_wrong_format(invalid_json_path):
         main(invalid_json_path)
 
 
-# def test_empty_object_returns_dict():
-#     result = main(pass1_path)
+def test_empty_object_returns_dict():
+    result = main(pass1_path)
 
-#     f = open(pass1_path)
+    f = open(pass1_path)
 
-#     data = json.load(f)
+    data = json.load(f)
 
-#     assert result == data
+    assert result == data
