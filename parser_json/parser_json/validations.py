@@ -1,3 +1,4 @@
+import inspect
 import re
 import sys
 
@@ -17,7 +18,7 @@ def is_valid_json_file(content):
 
 def json_not_empty(content):
     if not content or content.isspace():
-        raise ValueError("Error: The JSON file is empty or contains only whitespaces")
+        raise Exception("Error: The JSON file is empty or contains only whitespaces")
     else:
         return True
 
@@ -32,12 +33,11 @@ def starts_with_bracket_or_braces(content):
     if wrapped_in_braces or wrapped_in_brackets:
         return True
     else:
-        raise ValueError("Error: The JSON file doest not start and ends with {} por []")
+        raise Exception("Error: The JSON file doest not start and ends with {} por []")
 
 
 def check_trailing_comma(string):
     if len(string) == 2:
-        print(string, "STRING")
         char = string[0]
         next_char = string[1]
         if (
@@ -46,3 +46,12 @@ def check_trailing_comma(string):
             or string[1] == JSON_RIGHTBRACKET
         ):
             raise Exception("Error: JSON file cannot have trailing comma")
+
+
+def find_illegal_escapes(json_string):
+    print(json_string, "HRE")
+    # pattern2 = r'\\[0-9]|\t|\\(?!["\\/bfnrtu])|\n'
+    pattern = r'\\\\[0-9]|\t|\\(?!["\\/bfnrtu])|\n'
+    illegal_escapes = re.findall(pattern, json_string)
+    if illegal_escapes:
+        raise Exception(f"Illegal illegal escapes in string: {illegal_escapes}")

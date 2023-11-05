@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from .constants import *
 from .validations import *
 
@@ -11,6 +13,7 @@ JSON_SYNTAX = [
     JSON_LEFTBRACE,
     JSON_RIGHTBRACE,
 ]
+
 
 FALSE_LEN = len("false")
 TRUE_LEN = len("true")
@@ -26,7 +29,8 @@ def lex_string(string):
         return None, string
 
     for char in string:
-        if char == JSON_QUOTE:  # end string if a final quote is found
+        if char == JSON_QUOTE:
+            find_illegal_escapes(json_string)  # end string if a final quote is found
             return (
                 json_string,
                 string[len(json_string) + 1 :],
@@ -39,7 +43,7 @@ def lex_string(string):
 def lex_number(string):
     json_number = ""
 
-    number_chars = [str(d) for d in range(0, 10)] + ["-", "e", "."]
+    number_chars = [str(d) for d in range(0, 10)] + ["-", "+", "e", "E", "."]
 
     for char in string:
         if char in number_chars:
@@ -52,8 +56,12 @@ def lex_number(string):
     if not len(json_number):
         return None, string
 
-    if "." in json_number:
-        return float(json_number), rest
+    if "." in json_number or "e" in json_number or "E" in json_number:
+        return Decimal(json_number), rest
+
+    if len(json_number) > 1 and json_number[0] not in ["-", "+", "e", "E", "."]:
+        if int(json_number[0]) == 0:
+            raise Exception("Error: Numbers cannot have leading zeroes")
 
     return int(json_number), rest
 
@@ -113,6 +121,9 @@ def lex(string):
         # and check if its white space, part of the syntax or invalid char
         if char in JSON_WHITESPACE:
             string = string[1:]
+
+        # if char in JSON_ILLEGAL_ESCAPES:
+        #     raise Exception(f"Illegal backslash scape: {char}")
         elif char in JSON_SYNTAX:
             tokens.append(char)
             string = string[1:]
