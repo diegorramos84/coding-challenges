@@ -22,19 +22,26 @@ NULL_LEN = len("null")
 
 def lex_string(string):
     json_string = ""
+    escape = False  # Flag to track if an escape sequence is being processed
     # start the loop if a quote is found
     if string[0] == JSON_QUOTE:
         string = string[1:]  # remove the quote
     else:
         return None, string
-
     for char in string:
-        if char == JSON_QUOTE:
-            find_illegal_escapes(json_string)  # end string if a final quote is found
+        if escape:
+            if char.isspace():
+                raise Exception("Invalid space within escape sequence")
+            # If an escape sequence is being processed, treat it as a literal
+            json_string += "\\" + char
+            escape = False  # Reset the escape flag after processing
+        elif char == JSON_QUOTE:
             return (
                 json_string,
                 string[len(json_string) + 1 :],
-            )  # return the json_string and the rest of the string for further analysis. We also remove the closing quote
+            )
+        elif char == "\\":
+            escape = True
         else:
             json_string += char
     raise Exception("Expected end-of-string quote")
@@ -95,8 +102,11 @@ def lex(string):
         # if not just return it back
         json_string, string = lex_string(string)
         if json_string is not None:
-            tokens.append(json_string)
-            continue
+            print(type(json_string), "JSON STRING")
+            check = detect_spaces(json_string)
+            if check:
+                tokens.append(json_string)
+                continue
 
         json_string, string = lex_number(string)
         if json_string is not None:
