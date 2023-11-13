@@ -12,6 +12,8 @@ current_dir = os.path.dirname(__file__)
 folder_path = os.path.join(current_dir, "extra")
 
 pass1_path = os.path.join(current_dir, "extra", "pass1.json")
+pass2_path = os.path.join(current_dir, "extra", "pass2.json")
+pass3_path = os.path.join(current_dir, "extra", "pass3.json")
 
 
 def get_fail_json_files(dir):
@@ -32,6 +34,26 @@ def test_empty_object_returns_dict():
     result = main(pass1_path)
 
     f = open(pass1_path)
+
+    data = json.load(f)
+
+    assert result == data
+
+
+def test_deep_list():
+    result = main(pass2_path)
+
+    f = open(pass2_path)
+
+    data = json.load(f)
+
+    assert result == data
+
+
+def test_pass_3():
+    result = main(pass3_path)
+
+    f = open(pass3_path)
 
     data = json.load(f)
 

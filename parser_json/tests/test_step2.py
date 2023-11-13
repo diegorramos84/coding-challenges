@@ -33,7 +33,7 @@ def test_reject_files_trailing_comma():
     with pytest.raises(Exception) as result:
         main(invalid_json_path)
         print(result.value)
-    assert str(result.value) == "Error: JSON file cannot have trailing comma"
+    assert str(result.value) == "Error: Trailing comma in object"
 
 
 def test_reject_missing_quotes():

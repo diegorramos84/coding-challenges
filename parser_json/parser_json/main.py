@@ -11,7 +11,6 @@ def main(filename):
         if is_valid_json_file(content):
             print("Validation passed, continuing with processing...")
             tokens = lex(content)
-            print(tokens, "Tokens")
             return my_parse(tokens)[0]
         else:
             sys.exit(1)

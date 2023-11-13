@@ -23,27 +23,56 @@ NULL_LEN = len("null")
 def lex_string(string):
     json_string = ""
     escape = False  # Flag to track if an escape sequence is being processed
-    # start the loop if a quote is found
+
     if string[0] == JSON_QUOTE:
         string = string[1:]  # remove the quote
     else:
         return None, string
-    for char in string:
+
+    i = 0
+    while i < len(string):
+        char = string[i]
         if escape:
-            if char.isspace():
-                raise Exception("Invalid space within escape sequence")
-            # If an escape sequence is being processed, treat it as a literal
-            json_string += "\\" + char
-            escape = False  # Reset the escape flag after processing
-        elif char == JSON_QUOTE:
-            return (
-                json_string,
-                string[len(json_string) + 1 :],
-            )
+            if char in 'ntrbf"\\/u':
+                # Handle standard escape characters and Unicode
+                json_string += {
+                    "n": "\n",
+                    "t": "\t",
+                    "r": "\r",
+                    "b": "\b",
+                    "f": "\f",
+                    '"': '"',
+                    "\\": "\\",
+                    "/": "/",
+                }.get(char, "")
+                if char == "u":  # Special handling for Unicode
+                    if i + 4 >= len(string):
+                        raise Exception(
+                            "Invalid Unicode escape sequence: insufficient characters"
+                        )
+                    unicode_hex = string[i + 1 : i + 5]
+                    try:
+                        unicode_char = chr(int(unicode_hex, 16))
+                        json_string += unicode_char
+                        i += 4
+                    except ValueError:
+                        raise Exception(
+                            f"Invalid Unicode escape sequence: \\u{unicode_hex}"
+                        )
+            else:
+                raise Exception(f"Invalid escape sequence: \\{char}")
+            escape = False
         elif char == "\\":
             escape = True
+        elif char == JSON_QUOTE:
+            return json_string, string[i + 1 :]
+        elif char in ["\n", "\t"]:
+            # Raise exception for unescaped newline and tab characters
+            raise Exception(f"Unescaped control character in string: {char}")
         else:
             json_string += char
+        i += 1
+
     raise Exception("Expected end-of-string quote")
 
 
@@ -64,7 +93,7 @@ def lex_number(string):
         return None, string
 
     if "." in json_number or "e" in json_number or "E" in json_number:
-        return Decimal(json_number), rest
+        return float(json_number), rest
 
     if len(json_number) > 1 and json_number[0] not in ["-", "+", "e", "E", "."]:
         if int(json_number[0]) == 0:
@@ -102,11 +131,8 @@ def lex(string):
         # if not just return it back
         json_string, string = lex_string(string)
         if json_string is not None:
-            print(type(json_string), "JSON STRING")
-            check = detect_spaces(json_string)
-            if check:
-                tokens.append(json_string)
-                continue
+            tokens.append(json_string)
+            continue
 
         json_string, string = lex_number(string)
         if json_string is not None:
@@ -126,14 +152,11 @@ def lex(string):
         # if none of the functions processed it we get it here
 
         char = string[0]
-        check_trailing_comma(string)
 
         # and check if its white space, part of the syntax or invalid char
         if char in JSON_WHITESPACE:
             string = string[1:]
 
-        # if char in JSON_ILLEGAL_ESCAPES:
-        #     raise Exception(f"Illegal backslash scape: {char}")
         elif char in JSON_SYNTAX:
             tokens.append(char)
             string = string[1:]
